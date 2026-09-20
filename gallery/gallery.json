@@ -70,5 +70,14 @@
     "caption": "Coffee Jar",
     "issue": 3,
     "submittedAt": "2026-09-20T18:04:03.745Z"
+  },
+  {
+    "id": 1789927465246,
+    "image": "gallery/images/1789927463-2.png",
+    "name": "nilltronic",
+    "type": "Camera photo",
+    "caption": "Chessboard",
+    "issue": 2,
+    "submittedAt": "2026-09-20T18:04:25.247Z"
   }
 ]
