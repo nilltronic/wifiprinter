@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Boy Camera Frame Editor</title>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: #9bbc0f;
+      min-height: 100vh;
+      padding: 20px;
+      color: #0f380f;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: #0f380f;
+      margin-bottom: 30px;
+      animation: fadeInDown 0.6s ease;
+      background: #8bac0f;
+      padding: 20px;
+      border: 4px solid #0f380f;
+      box-shadow: 4px 4px 0 #306230;
+    }
+
+    .header h1 {
+      font-size: 2em;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 0 #306230;
+      letter-spacing: 2px;
+    }
+
+    .header p {
+      font-size: 1em;
+      opacity: 0.9;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .header .frames-link {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 0.85em;
+      color: #0f380f;
+      text-decoration: underline;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    .header .frames-link:hover {
+      color: #306230;
+    }
+
+    .card {
+      background: #9bbc0f;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 8px 8px 0 #0f380f;
+      animation: fadeInUp 0.6s ease;
+      border: 4px solid #0f380f;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 20px;
+    }
+
+    .canvas-section {
+      background: #8bac0f;
+      border: 4px solid #0f380f;
+      padding: 20px;
+      box-shadow: 4px 4px 0 #306230;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid #0f380f;
+    }
+
+    .frame-type-selector {
+      display: flex;
+      gap: 10px;
+    }
+
+    .frame-type-btn {
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 3px solid #0f380f;
+      background: #9bbc0f;
+      color: #0f380f;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'Courier New', Courier, monospace;
+      box-shadow: 3px 3px 0 #0f380f;
+      transition: all 0.1s ease;
+    }
+
+    .frame-type-btn:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 #0f380f;
+    }
+
+    .frame-type-btn.active {
+      background: #306230;
+      color: #9bbc0f;
+    }
+
+    .zoom-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .zoom-label {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .zoom-slider {
+      width: 100px;
+      height: 6px;
+      background: #306230;
+      border: 2px solid #0f380f;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .canvas-wrapper {
+      background: #306230;
+      padding: 20px;
+      border: 3px solid #0f380f;
+      display: inline-block;
+      position: relative;
+      max-width: 100%;
+      max-height: 80vh;
+      overflow: auto;   /* zoomed canvas can exceed the viewport — scroll rather than overflow the page */
+    }
+
+    .pixel-grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(15, 56, 15, 0.3) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(15, 56, 15, 0.3) 1px, transparent 1px);
+    }
+
+    .canvas-container {
+      position: relative;
+      border: 3px solid #0f380f;
+      background: #9bbc0f;
+    }
+
+    .canvas-layer {
+      position: absolute;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+    }
+
+    .canvas-info {
+      margin-top: 15px;
+      padding: 10px;
+      background: #306230;
+      border: 2px solid #0f380f;
+      color: #9bbc0f;
+      font-size: 0.9em;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel {
+      background: #8bac0f;
+      border: 4px solid #0f380f;
+      box-shadow: 4px 4px 0 #306230;
+    }
+
+    .panel-header {
+      padding: 15px;
+      background: #306230;
+      color: #9bbc0f;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border-bottom: 3px solid #0f380f;
+    }
+
+    .panel-content {
+      padding: 15px;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tool-btn {
+      padding: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 3px solid #0f380f;
+      background: #9bbc0f;
+      color: #0f380f;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'Courier New', Courier, monospace;
+      box-shadow: 3px 3px 0 #0f380f;
+      transition: all 0.1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .tool-btn:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 #0f380f;
+    }
+
+    .tool-btn.active {
+      background: #306230;
+      color: #9bbc0f;
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .color-btn {
+      height: 60px;
+      border: 4px solid #0f380f;
+      cursor: pointer;
+      transition: all 0.1s ease;
+      box-shadow: 3px 3px 0 #0f380f;
+    }
+
+    .color-btn:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 #0f380f;
+    }
+
+    .color-btn.active {
+      border-color: #ff0000;
+      border-width: 5px;
+    }
+
+    .color-label {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 0.85em;
+      color: #0f380f;
+      font-weight: 700;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 3px solid #0f380f;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'Courier New', Courier, monospace;
+      box-shadow: 3px 3px 0 #0f380f;
+      transition: all 0.1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .action-btn:hover:not(:disabled) {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 #0f380f;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #306230;
+      color: #9bbc0f;
+    }
+
+    .btn-danger {
+      background: #0f380f;
+      color: #9bbc0f;
+    }
+
+    .btn-success {
+      background: #306230;
+      color: #9bbc0f;
+    }
+
+    .action-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .action-group .action-btn {
+      flex: 1;
+    }
+
+    .text-dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 56, 15, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .text-dialog {
+      background: #8bac0f;
+      border: 4px solid #0f380f;
+      box-shadow: 8px 8px 0 #306230;
+      padding: 25px;
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .text-dialog h3 {
+      font-size: 1.3em;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #0f380f;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .text-dialog p {
+      margin-bottom: 15px;
+      color: #0f380f;
+      line-height: 1.5;
+    }
+
+    .text-dialog textarea {
+      width: 100%;
+      padding: 12px;
+      background: #9bbc0f;
+      border: 3px solid #0f380f;
+      color: #0f380f;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .text-dialog textarea:focus {
+      background: #fff;
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .info-text {
+      font-size: 0.85em;
+      color: #0f380f;
+      line-height: 1.4;
+    }
+
+    .info-text li {
+      margin-left: 20px;
+      margin-bottom: 5px;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .header h1 {
+        font-size: 1.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+    const COLORS = ['#000000', '#555555', '#aaaaaa', '#ffffff'];
+    const STANDARD_SIZE = { width: 160, height: 144 };
+    const WILDFRAME_SIZE = { width: 160, height: 224 };
+    const PHOTO_SIZE = { width: 128, height: 112 };
+
+    // PICO-8 font (4x6 pixels per character)
+    const PICO8_FONT = {
+      'A': [[0,1,1,0],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1],[1,0,0,1]],
+      'B': [[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,0,1],[1,0,0,1],[1,1,1,0]],
+      'C': [[0,1,1,1],[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,0,0,0],[0,1,1,1]],
+      'D': [[1,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,0]],
+      'E': [[1,1,1,1],[1,0,0,0],[1,1,1,0],[1,0,0,0],[1,0,0,0],[1,1,1,1]],
+      'F': [[1,1,1,1],[1,0,0,0],[1,1,1,0],[1,0,0,0],[1,0,0,0],[1,0,0,0]],
+      'G': [[0,1,1,1],[1,0,0,0],[1,0,1,1],[1,0,0,1],[1,0,0,1],[0,1,1,1]],
+      'H': [[1,0,0,1],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1],[1,0,0,1]],
+      'I': [[1,1,1,0],[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0],[1,1,1,0]],
+      'J': [[0,0,1,1],[0,0,0,1],[0,0,0,1],[0,0,0,1],[1,0,0,1],[0,1,1,0]],
+      'K': [[1,0,0,1],[1,0,1,0],[1,1,0,0],[1,0,1,0],[1,0,0,1],[1,0,0,1]],
+      'L': [[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,1,1,1]],
+      'M': [[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1]],
+      'N': [[1,0,0,1],[1,1,0,1],[1,0,1,1],[1,0,0,1],[1,0,0,1],[1,0,0,1]],
+      'O': [[0,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+      'P': [[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,0,0],[1,0,0,0],[1,0,0,0]],
+      'Q': [[0,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,1,1],[1,0,0,1],[0,1,1,1]],
+      'R': [[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,1,0],[1,0,0,1],[1,0,0,1]],
+      'S': [[0,1,1,1],[1,0,0,0],[0,1,1,0],[0,0,0,1],[0,0,0,1],[1,1,1,0]],
+      'T': [[1,1,1,1],[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
+      'U': [[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+      'V': [[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0],[0,1,1,0]],
+      'W': [[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,1],[1,0,0,1]],
+      'X': [[1,0,0,1],[1,0,0,1],[0,1,1,0],[0,1,1,0],[1,0,0,1],[1,0,0,1]],
+      'Y': [[1,0,0,1],[1,0,0,1],[0,1,1,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
+      'Z': [[1,1,1,1],[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0],[1,1,1,1]],
+      '0': [[0,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+      '1': [[0,1,0,0],[1,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0],[1,1,1,0]],
+      '2': [[0,1,1,0],[1,0,0,1],[0,0,0,1],[0,1,1,0],[1,0,0,0],[1,1,1,1]],
+      '3': [[1,1,1,0],[0,0,0,1],[0,1,1,0],[0,0,0,1],[0,0,0,1],[1,1,1,0]],
+      '4': [[1,0,0,1],[1,0,0,1],[1,1,1,1],[0,0,0,1],[0,0,0,1],[0,0,0,1]],
+      '5': [[1,1,1,1],[1,0,0,0],[1,1,1,0],[0,0,0,1],[0,0,0,1],[1,1,1,0]],
+      '6': [[0,1,1,0],[1,0,0,0],[1,1,1,0],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+      '7': [[1,1,1,1],[0,0,0,1],[0,0,1,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
+      '8': [[0,1,1,0],[1,0,0,1],[0,1,1,0],[1,0,0,1],[1,0,0,1],[0,1,1,0]],
+      '9': [[0,1,1,0],[1,0,0,1],[1,0,0,1],[0,1,1,1],[0,0,0,1],[0,1,1,0]],
+      ' ': [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+      '!': [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,0,0,0],[0,1,0,0]],
+      '?': [[0,1,1,0],[1,0,0,1],[0,0,1,0],[0,1,0,0],[0,0,0,0],[0,1,0,0]],
+      '.': [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,1,0,0]],
+      ',': [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,1,0,0],[1,0,0,0]],
+      ':': [[0,0,0,0],[0,1,0,0],[0,0,0,0],[0,0,0,0],[0,1,0,0],[0,0,0,0]],
+      '-': [[0,0,0,0],[0,0,0,0],[1,1,1,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+      '+': [[0,0,0,0],[0,1,0,0],[1,1,1,0],[0,1,0,0],[0,0,0,0],[0,0,0,0]],
+      '=': [[0,0,0,0],[1,1,1,0],[0,0,0,0],[1,1,1,0],[0,0,0,0],[0,0,0,0]],
+      '/': [[0,0,0,1],[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0],[1,0,0,0]],
+      '(': [[0,0,1,0],[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,0,1,0]],
+      ')': [[0,1,0,0],[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,1,0,0]],
+    };
+
+    const Icons = {
+      Pencil: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+        </svg>
+      ),
+      Eraser: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/>
+          <path d="M22 21H7"/>
+        </svg>
+      ),
+      Square: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect width="18" height="18" x="3" y="3" rx="2"/>
+        </svg>
+      ),
+      Type: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="4 7 4 4 20 4 20 7"/>
+          <line x1="9" x2="15" y1="20" y2="20"/>
+          <line x1="12" x2="12" y1="4" y2="20"/>
+        </svg>
+      ),
+      Grid: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect width="18" height="18" x="3" y="3" rx="2"/>
+          <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+        </svg>
+      ),
+      Undo: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M3 7v6h6M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+        </svg>
+      ),
+      Redo: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 7v6h-6M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
+        </svg>
+      ),
+      Download: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" x2="12" y1="15" y2="3"/>
+        </svg>
+      ),
+    };
+
+    const FrameEditor = () => {
+      const [frameType, setFrameType] = useState('standard');
+      const [selectedColor, setSelectedColor] = useState('#000000');
+      const [tool, setTool] = useState('pencil');
+      const [zoom, setZoom] = useState(3);
+      const [showGrid, setShowGrid] = useState(false);
+      const [isDrawing, setIsDrawing] = useState(false);
+      const [history, setHistory] = useState([]);
+      const [historyIndex, setHistoryIndex] = useState(-1);
+      const [hoverPixel, setHoverPixel] = useState(null);
+      const [textInput, setTextInput] = useState('');
+      const [showTextDialog, setShowTextDialog] = useState(false);
+      const [textPosition, setTextPosition] = useState(null);
+      const [placedTexts, setPlacedTexts] = useState([]);
+      const [selectedTextIndex, setSelectedTextIndex] = useState(null);
+      const [editingTextIndex, setEditingTextIndex] = useState(null);
+      const [textMoveX, setTextMoveX] = useState('');
+      const [textMoveY, setTextMoveY] = useState('');
+      
+      const canvasRef = useRef(null);
+      const overlayRef = useRef(null);
+      const contextRef = useRef(null);
+      const overlayContextRef = useRef(null);
+      const pixelDataRef = useRef(null);
+
+      const frameSize = frameType === 'standard' ? STANDARD_SIZE : WILDFRAME_SIZE;
+      const photoPosition = frameType === 'standard' ? { x: 16, y: 16 } : { x: 16, y: 40 };
+
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        const overlay = overlayRef.current;
+        if (!canvas || !overlay) return;
+
+        canvas.width = frameSize.width;
+        canvas.height = frameSize.height;
+        overlay.width = frameSize.width;
+        overlay.height = frameSize.height;
+        
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.imageSmoothingEnabled = false;
+        contextRef.current = ctx;
+
+        const overlayCtx = overlay.getContext('2d', { alpha: true });
+        overlayCtx.imageSmoothingEnabled = false;
+        overlayContextRef.current = overlayCtx;
+
+        if (!pixelDataRef.current || 
+            pixelDataRef.current.length !== frameSize.width * frameSize.height) {
+          const newData = new Array(frameSize.width * frameSize.height).fill('#ffffff');
+          pixelDataRef.current = newData;
+          saveToHistory(newData);
+        }
+
+        redrawCanvas();
+      }, [frameType]);
+
+      useEffect(() => {
+        redrawOverlay();
+      }, [hoverPixel, showGrid, zoom, frameSize, placedTexts, selectedTextIndex]);
+
+      const saveToHistory = (data) => {
+        const newHistory = history.slice(0, historyIndex + 1);
+        newHistory.push([...data]);
+        setHistory(newHistory);
+        setHistoryIndex(newHistory.length - 1);
+      };
+
+      const undo = () => {
+        if (historyIndex > 0) {
+          setHistoryIndex(historyIndex - 1);
+          pixelDataRef.current = [...history[historyIndex - 1]];
+          redrawCanvas();
+        }
+      };
+
+      const redo = () => {
+        if (historyIndex < history.length - 1) {
+          setHistoryIndex(historyIndex + 1);
+          pixelDataRef.current = [...history[historyIndex + 1]];
+          redrawCanvas();
+        }
+      };
+
+      const redrawCanvas = () => {
+        const ctx = contextRef.current;
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, frameSize.width, frameSize.height);
+
+        for (let y = 0; y < frameSize.height; y++) {
+          for (let x = 0; x < frameSize.width; x++) {
+            const idx = y * frameSize.width + x;
+            const color = pixelDataRef.current[idx];
+            
+            if (x >= photoPosition.x && x < photoPosition.x + PHOTO_SIZE.width &&
+                y >= photoPosition.y && y < photoPosition.y + PHOTO_SIZE.height) {
+              continue;
+            }
+            
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+          photoPosition.x + 0.5,
+          photoPosition.y + 0.5,
+          PHOTO_SIZE.width - 1,
+          PHOTO_SIZE.height - 1
+        );
+      };
+
+      const redrawOverlay = () => {
+        const ctx = overlayContextRef.current;
+        if (!ctx) return;
+
+        // Always clear with full transparency
+        ctx.clearRect(0, 0, frameSize.width, frameSize.height);
+
+        // Grid is now drawn as a separate CSS layer (see .pixel-grid-overlay
+        // in the JSX below) — it's always crisp at any zoom, since it's not
+        // rasterized into this same low-resolution native canvas buffer.
+
+        // Draw text selection boxes
+        if (tool === 'text' && placedTexts.length > 0) {
+          ctx.save();
+          placedTexts.forEach((textObj, index) => {
+            const isSelected = index === selectedTextIndex;
+            ctx.strokeStyle = isSelected ? '#00ff00' : '#ffff00';
+            ctx.lineWidth = isSelected ? 2 : 1;
+            ctx.strokeRect(textObj.x - 1, textObj.y - 1, textObj.width + 2, textObj.height + 2);
+          });
+          ctx.restore();
+        }
+
+        // Draw hover indicator for pencil/eraser
+        if (hoverPixel && (tool === 'pencil' || tool === 'eraser')) {
+          ctx.save();
+          ctx.fillStyle = '#00ff00';
+          ctx.fillRect(hoverPixel.x, hoverPixel.y, 1, 1);
+          ctx.restore();
+        }
+      };
+
+      const getCanvasCoords = (e) => {
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / zoom);
+        const y = Math.floor((e.clientY - rect.top) / zoom);
+        return { x, y };
+      };
+
+      const isInPhotoArea = (x, y) => {
+        return x >= photoPosition.x && x < photoPosition.x + PHOTO_SIZE.width &&
+               y >= photoPosition.y && y < photoPosition.y + PHOTO_SIZE.height;
+      };
+
+      const drawPixel = (x, y) => {
+        if (x < 0 || x >= frameSize.width || y < 0 || y >= frameSize.height) return;
+        if (isInPhotoArea(x, y)) return;
+
+        const idx = y * frameSize.width + x;
+        const color = tool === 'eraser' ? '#ffffff' : selectedColor;
+        
+        if (pixelDataRef.current[idx] !== color) {
+          pixelDataRef.current[idx] = color;
+          
+          const ctx = contextRef.current;
+          ctx.fillStyle = color;
+          ctx.fillRect(x, y, 1, 1);
+        }
+      };
+
+      const handleMouseDown = (e) => {
+        const { x, y } = getCanvasCoords(e);
+        
+        if (tool === 'text') {
+          // Check if clicking on existing text
+          for (let i = placedTexts.length - 1; i >= 0; i--) {
+            const text = placedTexts[i];
+            if (x >= text.x && x < text.x + text.width &&
+                y >= text.y && y < text.y + text.height) {
+              setSelectedTextIndex(i);
+              setEditingTextIndex(i);
+              setTextInput(text.text);
+              setTextMoveX(text.x.toString());
+              setTextMoveY(text.y.toString());
+              setShowTextDialog(true);
+              return;
+            }
+          }
+          
+          // Place new text
+          setSelectedTextIndex(null);
+          setEditingTextIndex(null);
+          setTextPosition({ x, y });
+          setTextInput('');
+          setTextMoveX('');
+          setTextMoveY('');
+          setShowTextDialog(true);
+          return;
+        }
+
+        setIsDrawing(true);
+        if (tool === 'pencil' || tool === 'eraser') {
+          drawPixel(x, y);
+        }
+      };
+
+      const handleMouseMove = (e) => {
+        const { x, y } = getCanvasCoords(e);
+        setHoverPixel({ x, y });
+
+        if (!isDrawing) return;
+        if (tool === 'pencil' || tool === 'eraser') {
+          drawPixel(x, y);
+        }
+      };
+
+      const handleMouseUp = () => {
+        if (isDrawing) {
+          setIsDrawing(false);
+          saveToHistory(pixelDataRef.current);
+        }
+      };
+
+      const handleMouseLeave = () => {
+        setHoverPixel(null);
+        handleMouseUp();
+      };
+
+      const fillArea = (startX, startY) => {
+        if (isInPhotoArea(startX, startY)) return;
+
+        const targetColor = pixelDataRef.current[startY * frameSize.width + startX];
+        const fillColor = selectedColor;
+        
+        if (targetColor === fillColor) return;
+
+        const stack = [[startX, startY]];
+        const filled = new Set();
+
+        while (stack.length > 0) {
+          const [x, y] = stack.pop();
+          const idx = y * frameSize.width + x;
+          const key = `${x},${y}`;
+
+          if (x < 0 || x >= frameSize.width || y < 0 || y >= frameSize.height) continue;
+          if (filled.has(key)) continue;
+          if (isInPhotoArea(x, y)) continue;
+          if (pixelDataRef.current[idx] !== targetColor) continue;
+
+          filled.add(key);
+          pixelDataRef.current[idx] = fillColor;
+
+          stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+        }
+
+        redrawCanvas();
+        saveToHistory(pixelDataRef.current);
+      };
+
+      const drawText = (text, startX, startY, color, persist = true) => {
+        let cursorX = startX;
+        let cursorY = startY;
+        const drawnPixels = [];
+        let maxWidth = 0;
+        let lineWidth = 0;
+
+        for (let i = 0; i < text.length; i++) {
+          const char = text[i].toUpperCase();
+          
+          if (char === '\n') {
+            maxWidth = Math.max(maxWidth, lineWidth);
+            lineWidth = 0;
+            cursorY += 7;
+            cursorX = startX;
+            continue;
+          }
+
+          const glyph = PICO8_FONT[char];
+          if (!glyph) {
+            lineWidth += 5;
+            cursorX += 5;
+            continue;
+          }
+
+          for (let y = 0; y < glyph.length; y++) {
+            for (let x = 0; x < glyph[y].length; x++) {
+              if (glyph[y][x] === 1) {
+                const px = cursorX + x;
+                const py = cursorY + y;
+                if (px >= 0 && px < frameSize.width && 
+                    py >= 0 && py < frameSize.height &&
+                    !isInPhotoArea(px, py)) {
+                  drawnPixels.push({ x: px, y: py });
+                  const idx = py * frameSize.width + px;
+                  pixelDataRef.current[idx] = color;
+                }
+              }
+            }
+          }
+
+          lineWidth += 5;
+          cursorX += 5;
+        }
+
+        maxWidth = Math.max(maxWidth, lineWidth);
+        const textHeight = (text.split('\n').length * 7) - 1;
+
+        if (persist) {
+          return {
+            text,
+            x: startX,
+            y: startY,
+            width: maxWidth,
+            height: textHeight,
+            color: color,
+            pixels: drawnPixels
+          };
+        }
+      };
+
+      const renderAllTexts = () => {
+        // Clear all text pixels first
+        placedTexts.forEach(textObj => {
+          textObj.pixels.forEach(({ x, y }) => {
+            const idx = y * frameSize.width + x;
+            pixelDataRef.current[idx] = '#ffffff';
+          });
+        });
+
+        // Redraw all texts
+        const newTexts = placedTexts.map(textObj => {
+          return drawText(textObj.text, textObj.x, textObj.y, textObj.color, true);
+        });
+
+        setPlacedTexts(newTexts);
+        redrawCanvas();
+      };
+
+      const updateText = (index, updates) => {
+        const newTexts = [...placedTexts];
+        const oldText = newTexts[index];
+        
+        // Clear old text pixels
+        oldText.pixels.forEach(({ x, y }) => {
+          const idx = y * frameSize.width + x;
+          pixelDataRef.current[idx] = '#ffffff';
+        });
+
+        // Create updated text object
+        const updatedText = drawText(
+          updates.text !== undefined ? updates.text : oldText.text,
+          updates.x !== undefined ? updates.x : oldText.x,
+          updates.y !== undefined ? updates.y : oldText.y,
+          updates.color !== undefined ? updates.color : oldText.color,
+          true
+        );
+
+        newTexts[index] = updatedText;
+        setPlacedTexts(newTexts);
+        redrawCanvas();
+      };
+
+      const deleteText = (index) => {
+        const textObj = placedTexts[index];
+        
+        // Clear text pixels
+        textObj.pixels.forEach(({ x, y }) => {
+          const idx = y * frameSize.width + x;
+          pixelDataRef.current[idx] = '#ffffff';
+        });
+
+        const newTexts = placedTexts.filter((_, i) => i !== index);
+        setPlacedTexts(newTexts);
+        setSelectedTextIndex(null);
+        redrawCanvas();
+        saveToHistory(pixelDataRef.current);
+      };
+
+      const handleTextSubmit = () => {
+        if (!textInput) return;
+        
+        if (editingTextIndex !== null) {
+          // Get new position if provided
+          const newX = textMoveX !== '' ? parseInt(textMoveX) : placedTexts[editingTextIndex].x;
+          const newY = textMoveY !== '' ? parseInt(textMoveY) : placedTexts[editingTextIndex].y;
+          
+          // Update existing text
+          updateText(editingTextIndex, { 
+            text: textInput,
+            color: selectedColor,
+            x: newX,
+            y: newY
+          });
+          setEditingTextIndex(null);
+        } else if (textPosition) {
+          // Add new text
+          const newText = drawText(textInput, textPosition.x, textPosition.y, selectedColor, true);
+          setPlacedTexts([...placedTexts, newText]);
+          redrawCanvas();
+        }
+        
+        setTextInput('');
+        setTextMoveX('');
+        setTextMoveY('');
+        setShowTextDialog(false);
+        setTextPosition(null);
+        setSelectedTextIndex(null);
+        saveToHistory(pixelDataRef.current);
+      };
+
+      const handleTextDelete = () => {
+        if (editingTextIndex !== null) {
+          deleteText(editingTextIndex);
+          setShowTextDialog(false);
+          setTextInput('');
+          setEditingTextIndex(null);
+        }
+      };
+
+      const handleCanvasClick = (e) => {
+        if (tool === 'fill') {
+          const { x, y } = getCanvasCoords(e);
+          fillArea(x, y);
+        }
+      };
+
+      const clearFrame = () => {
+        if (!window.confirm('Clear entire frame? This cannot be undone.')) return;
+        pixelDataRef.current.fill('#ffffff');
+        redrawCanvas();
+        saveToHistory(pixelDataRef.current);
+      };
+
+      const exportPNG = () => {
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = frameSize.width;
+        exportCanvas.height = frameSize.height;
+        const ctx = exportCanvas.getContext('2d');
+
+        const imageData = ctx.createImageData(frameSize.width, frameSize.height);
+        
+        for (let y = 0; y < frameSize.height; y++) {
+          for (let x = 0; x < frameSize.width; x++) {
+            const idx = y * frameSize.width + x;
+            const pixelIdx = idx * 4;
+            
+            // Check if in photo area - make transparent
+            if (x >= photoPosition.x && x < photoPosition.x + PHOTO_SIZE.width &&
+                y >= photoPosition.y && y < photoPosition.y + PHOTO_SIZE.height) {
+              imageData.data[pixelIdx] = 0;
+              imageData.data[pixelIdx + 1] = 0;
+              imageData.data[pixelIdx + 2] = 0;
+              imageData.data[pixelIdx + 3] = 0; // Transparent alpha
+            } else {
+              const color = pixelDataRef.current[idx];
+              const value = parseInt(color.slice(1), 16);
+              const r = (value >> 16) & 0xff;
+              const g = (value >> 8) & 0xff;
+              const b = value & 0xff;
+              
+              imageData.data[pixelIdx] = r;
+              imageData.data[pixelIdx + 1] = g;
+              imageData.data[pixelIdx + 2] = b;
+              imageData.data[pixelIdx + 3] = 255; // Opaque
+            }
+          }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+
+        exportCanvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `gb-camera-frame-${frameType}-${Date.now()}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      };
+
+      return (
+        <div className="container">
+          <div className="header">
+            <h1>GAMEBOY FRAME EDITOR</h1>
+            <p>*** PIXEL ART TOOL ***</p>
+            
+            
+            <p><a className="frames-link" href="index.html">Back to the index &rarr;</a></p>
+          </div>
+
+          <div className="card">
+            <div className="main-grid">
+              <div className="canvas-section">
+                <div className="toolbar">
+                  <div className="frame-type-selector">
+                    <button
+                      className={`frame-type-btn ${frameType === 'standard' ? 'active' : ''}`}
+                      onClick={() => setFrameType('standard')}
+                    >
+                      Standard 160×144
+                    </button>
+                    <button
+                      className={`frame-type-btn ${frameType === 'wildframe' ? 'active' : ''}`}
+                      onClick={() => setFrameType('wildframe')}
+                    >
+                      Wildframe 160×224
+                    </button>
+                    <button
+                      className={`frame-type-btn ${showGrid ? 'active' : ''}`}
+                      onClick={() => setShowGrid(!showGrid)}
+                    >
+                      <Icons.Grid /> GRID
+                    </button>
+                  </div>
+                  
+                  <div className="zoom-control">
+                    <span className="zoom-label">Zoom:</span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={zoom}
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                      className="zoom-slider"
+                    />
+                    <span className="zoom-label">{zoom}×</span>
+                  </div>
+                </div>
+
+                <div className="canvas-wrapper">
+                  <div 
+                    className="canvas-container"
+                    style={{ 
+                      width: frameSize.width * zoom, 
+                      height: frameSize.height * zoom 
+                    }}
+                  >
+                    <canvas
+                      ref={canvasRef}
+                      className="canvas-layer"
+                      style={{
+                        width: frameSize.width * zoom,
+                        height: frameSize.height * zoom,
+                      }}
+                    />
+                    <canvas
+                      ref={overlayRef}
+                      className="canvas-layer"
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseLeave}
+                      onClick={handleCanvasClick}
+                      style={{
+                        width: frameSize.width * zoom,
+                        height: frameSize.height * zoom,
+                        cursor: tool === 'fill' ? 'crosshair' : tool === 'text' ? 'text' : 'crosshair',
+                      }}
+                    />
+                    {showGrid && zoom >= 2 && (
+                      <div
+                        className="pixel-grid-overlay"
+                        style={{
+                          width: frameSize.width * zoom,
+                          height: frameSize.height * zoom,
+                          backgroundSize: `${zoom}px ${zoom}px`,
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="canvas-info">
+                  <p>Red outline = transparent photo area (128×112)</p>
+                  {hoverPixel && <p>Position: X:{hoverPixel.x} Y:{hoverPixel.y}</p>}
+                  {tool === 'text' && <p style={{color: '#9bbc0f', background: '#306230', padding: '5px', marginTop: '5px'}}>CLICK on text to edit/move • CLICK empty space to add new</p>}
+                </div>
+              </div>
+
+              <div className="sidebar">
+                <div className="panel">
+                  <div className="panel-header">⚙ TOOLS</div>
+                  <div className="panel-content">
+                    <div className="tool-grid">
+                      <button
+                        className={`tool-btn ${tool === 'pencil' ? 'active' : ''}`}
+                        onClick={() => setTool('pencil')}
+                      >
+                        <Icons.Pencil /> PENCIL
+                      </button>
+                      <button
+                        className={`tool-btn ${tool === 'eraser' ? 'active' : ''}`}
+                        onClick={() => setTool('eraser')}
+                      >
+                        <Icons.Eraser /> ERASER
+                      </button>
+                      <button
+                        className={`tool-btn ${tool === 'fill' ? 'active' : ''}`}
+                        onClick={() => setTool('fill')}
+                      >
+                        <Icons.Square /> FILL
+                      </button>
+                      <button
+                        className={`tool-btn ${tool === 'text' ? 'active' : ''}`}
+                        onClick={() => setTool('text')}
+                      >
+                        <Icons.Type /> TEXT
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="panel">
+                  <div className="panel-header">⚙ PALETTE</div>
+                  <div className="panel-content">
+                    <div className="palette-grid">
+                      {COLORS.map((color) => (
+                        <button
+                          key={color}
+                          className={`color-btn ${selectedColor === color ? 'active' : ''}`}
+                          onClick={() => setSelectedColor(color)}
+                          style={{ backgroundColor: color }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                    <div className="color-label">Selected: {selectedColor}</div>
+                  </div>
+                </div>
+
+                <div className="panel">
+                  <div className="panel-header">↺ HISTORY</div>
+                  <div className="panel-content">
+                    <div className="action-group">
+                      <button
+                        onClick={undo}
+                        disabled={historyIndex <= 0}
+                        className="action-btn btn-primary"
+                      >
+                        <Icons.Undo /> UNDO
+                      </button>
+                      <button
+                        onClick={redo}
+                        disabled={historyIndex >= history.length - 1}
+                        className="action-btn btn-primary"
+                      >
+                        <Icons.Redo /> REDO
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="panel">
+                  <div className="panel-header">⚡ ACTIONS</div>
+                  <div className="panel-content">
+                    <button onClick={clearFrame} className="action-btn btn-danger" style={{marginBottom: '10px'}}>
+                      ✕ CLEAR FRAME
+                    </button>
+                    <button onClick={exportPNG} className="action-btn btn-success">
+                      <Icons.Download /> EXPORT PNG
+                    </button>
+                  </div>
+                </div>
+
+                <div className="panel">
+                  <div className="panel-content">
+                    <ul className="info-text">
+                      <li>4-color palette (2-bit)</li>
+                      <li>Photo area: transparent</li>
+                      <li>PICO-8 font (4×6 px)</li>
+                      <li>Ready for Wifi Printer</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {showTextDialog && (
+            <div className="text-dialog-overlay" onClick={() => {
+              setShowTextDialog(false);
+              setTextInput('');
+              setEditingTextIndex(null);
+              setTextPosition(null);
+            }}>
+              <div className="text-dialog" onClick={(e) => e.stopPropagation()}>
+                <h3>{editingTextIndex !== null ? 'EDIT TEXT' : 'ADD TEXT'}</h3>
+                <p>
+                  Using PICO-8 font (4×6 pixels)<br/>
+                  {editingTextIndex !== null ? (
+                    <>Position: X:{placedTexts[editingTextIndex]?.x} Y:{placedTexts[editingTextIndex]?.y}</>
+                  ) : (
+                    <>Position: X:{textPosition?.x} Y:{textPosition?.y}</>
+                  )}
+                </p>
+                <textarea
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Enter text (A-Z, 0-9, basic symbols)"
+                  rows="3"
+                  autoFocus
+                />
+                
+                {editingTextIndex !== null && (
+                  <>
+                    <div style={{marginTop: '15px'}}>
+                      <label style={{display: 'block', marginBottom: '10px', fontWeight: 700, color: '#0f380f'}}>
+                        MOVE TEXT (X, Y):
+                      </label>
+                      <div style={{display: 'flex', gap: '10px'}}>
+                        <input
+                          type="number"
+                          value={textMoveX}
+                          onChange={(e) => setTextMoveX(e.target.value)}
+                          placeholder="X"
+                          style={{
+                            flex: 1,
+                            padding: '8px',
+                            background: '#9bbc0f',
+                            border: '3px solid #0f380f',
+                            color: '#0f380f',
+                            fontFamily: 'Courier New, monospace',
+                            fontSize: '14px'
+                          }}
+                        />
+                        <input
+                          type="number"
+                          value={textMoveY}
+                          onChange={(e) => setTextMoveY(e.target.value)}
+                          placeholder="Y"
+                          style={{
+                            flex: 1,
+                            padding: '8px',
+                            background: '#9bbc0f',
+                            border: '3px solid #0f380f',
+                            color: '#0f380f',
+                            fontFamily: 'Courier New, monospace',
+                            fontSize: '14px'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div style={{marginTop: '15px'}}>
+                      <label style={{display: 'block', marginBottom: '10px', fontWeight: 700, color: '#0f380f'}}>
+                        TEXT COLOR:
+                      </label>
+                      <div className="palette-grid">
+                        {COLORS.map((color) => (
+                          <button
+                            key={color}
+                            className={`color-btn ${selectedColor === color ? 'active' : ''}`}
+                            onClick={() => setSelectedColor(color)}
+                            style={{ backgroundColor: color, height: '40px' }}
+                            title={color}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                <div className="dialog-actions">
+                  <button onClick={handleTextSubmit} className="action-btn btn-success">
+                    {editingTextIndex !== null ? 'UPDATE' : 'PLACE TEXT'}
+                  </button>
+                  {editingTextIndex !== null && (
+                    <button onClick={handleTextDelete} className="action-btn btn-danger">
+                      DELETE
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowTextDialog(false);
+                      setTextInput('');
+                      setTextMoveX('');
+                      setTextMoveY('');
+                      setEditingTextIndex(null);
+                      setTextPosition(null);
+                    }}
+                    className="action-btn btn-primary"
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.render(<FrameEditor />, document.getElementById('root'));
+  </script>
+</body>
+</html>
