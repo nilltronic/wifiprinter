@@ -61,5 +61,14 @@
     "caption": "a can of pop",
     "issue": 1,
     "submittedAt": "2026-09-20T17:59:25.843Z"
+  },
+  {
+    "id": 1789927443745,
+    "image": "gallery/images/1789927440-3.png",
+    "name": "nilltronic",
+    "type": "Camera photo",
+    "caption": "Coffee Jar",
+    "issue": 3,
+    "submittedAt": "2026-09-20T18:04:03.745Z"
   }
 ]
