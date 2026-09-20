@@ -1,7 +1,7 @@
 
 # Gameboy Camera Frame Editor
 
-https://nilltronic.github.io/Gameboy_Camera_Frame_Editor/
+https://nilltronic.github.io/wifiprinter/
 
 A quick and dirty way of designing your own Gameboy camera frames, without the need of image editing software. 
 
