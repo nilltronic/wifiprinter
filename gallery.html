@@ -110,6 +110,26 @@ a.back {
   margin-top: 32px;
   color: #0f380f;
 }
+
+  .card img { cursor: zoom-in; }
+
+#lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 56, 15, 0.9);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  image-rendering: pixelated;
+  border: 3px solid #9bbc0f;
+}
 </style>
 </head>
 <body>
@@ -129,6 +149,7 @@ a.back {
 
 <div id="grid-Camera photo" class="grid"></div>
 <div id="grid-Custom frame" class="grid hidden"></div>
+<div id="lightbox"><img id="lightbox-img" src="" alt=""></div>
 
 <a class="back" href="index.html">&larr; Back to the index</a>
 
@@ -179,7 +200,7 @@ fetch(GALLERY_JSON_URL)
 
     var counts = { "Camera photo": 0, "Custom frame": 0 };
 
-    entries.forEach(function(entry) {
+        entries.forEach(function(entry) {
       var grid = grids[entry.type];
       if (!grid) return; // unknown type, skip safely
 
@@ -223,6 +244,18 @@ fetch(GALLERY_JSON_URL)
   .catch(function(err) {
     statusEl.textContent = 'Could not load the gallery (' + err.message + ').';
   });
+
+var lightbox = document.getElementById('lightbox');
+var lightboxImg = document.getElementById('lightbox-img');
+
+document.addEventListener('click', function(e) {
+  if (e.target.tagName === 'IMG' && e.target.closest('.card')) {
+    lightboxImg.src = e.target.src;
+    lightbox.classList.add('open');
+  } else if (e.target === lightbox) {
+    lightbox.classList.remove('open');
+  }
+});
 </script>
 
 </body>
