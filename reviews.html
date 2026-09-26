@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reviews & Mentions</title>
+<style>
+body {
+  font-family: monospace;
+  background: #9bbc0f;
+  color: #0f380f;
+  margin: 0;
+  padding: 24px 16px 60px;
+}
+h1 {
+  text-align: center;
+  margin: 0 0 6px;
+}
+h2 {
+  max-width: 900px;
+  margin: 40px auto 16px;
+  border-bottom: 2px solid #0f380f;
+  padding-bottom: 6px;
+}
+p.sub {
+  text-align: center;
+  max-width: 560px;
+  margin: 0 auto 8px;
+  line-height: 1.5;
+}
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.video-card {
+  background: #8bac0f;
+  border: 2px solid #0f380f;
+  border-radius: 6px;
+  padding: 10px;
+}
+.video-card .frame {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 */
+  height: 0;
+  overflow: hidden;
+  border: 1px solid #0f380f;
+  margin-bottom: 8px;
+}
+.video-card .frame iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.video-card .title {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+.video-card .channel {
+  font-size: 11px;
+  opacity: 0.85;
+}
+.post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.post-card {
+  background: #8bac0f;
+  border: 2px solid #0f380f;
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.post-card .title {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.post-card .summary {
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.post-card a.view {
+  display: inline-block;
+  font-size: 12px;
+  padding: 6px 12px;
+  background: #0f380f;
+  color: #9bbc0f;
+  text-decoration: none;
+  border-radius: 4px;
+}
+.post-card a.view:hover {
+  opacity: 0.85;
+}
+a.back {
+  display: block;
+  text-align: center;
+  margin-top: 40px;
+  color: #0f380f;
+}
+</style>
+</head>
+<body>
+
+<h1>Reviews &amp; Mentions</h1>
+<p class="sub">Videos and posts from other printer owners sharing their experience.</p>
+
+<h2>Videos</h2>
+<div id="video-grid" class="video-grid"></div>
+
+<h2>Community Posts</h2>
+<div id="post-list" class="post-list"></div>
+
+<a class="back" href="index.html">&larr; Back to the index</a>
+
+<script>
+// ------------------------------------------------------------------
+// Add more entries here any time — no build step needed.
+//
+// For a video: { id: "<the YouTube video ID from the URL>",
+//                 title: "<video title>", channel: "<channel name>" }
+//
+// For a post:  { title: "<short description of who/what>",
+//                 summary: "<one or two sentence description>",
+//                 url: "<link to the post>" }
+// ------------------------------------------------------------------
+var VIDEOS = [
+  {
+    id: "svf0paBxt6s",
+    title: "TODO: add this video's title",
+    channel: "TODO: add channel name"
+  },
+  {
+    id: "GAmjWUChPPE",
+    title: "TODO: add this video's title",
+    channel: "TODO: add channel name"
+  }
+];
+
+var POSTS = [
+  {
+    title: "TODO: add a short title (e.g. who posted it)",
+    summary: "TODO: add a sentence or two describing the post",
+    url: "https://www.facebook.com/story.php?story_fbid=1939605449408992&id=413144775388408"
+  }
+];
+
+var videoGrid = document.getElementById('video-grid');
+var postList = document.getElementById('post-list');
+
+if (VIDEOS.length === 0) {
+  videoGrid.innerHTML = '<p class="sub">No videos yet.</p>';
+} else {
+  VIDEOS.forEach(function(v) {
+    var card = document.createElement('div');
+    card.className = 'video-card';
+
+    var frame = document.createElement('div');
+    frame.className = 'frame';
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://www.youtube-nocookie.com/embed/' + v.id;
+    iframe.title = v.title;
+    iframe.loading = 'lazy';
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    iframe.allowFullscreen = true;
+    frame.appendChild(iframe);
+
+    var title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = v.title;
+
+    var channel = document.createElement('div');
+    channel.className = 'channel';
+    channel.textContent = v.channel;
+
+    card.appendChild(frame);
+    card.appendChild(title);
+    card.appendChild(channel);
+    videoGrid.appendChild(card);
+  });
+}
+
+if (POSTS.length === 0) {
+  postList.innerHTML = '<p class="sub">No posts yet.</p>';
+} else {
+  POSTS.forEach(function(p) {
+    var card = document.createElement('div');
+    card.className = 'post-card';
+
+    var title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = p.title;
+
+    var summary = document.createElement('div');
+    summary.className = 'summary';
+    summary.textContent = p.summary;
+
+    var link = document.createElement('a');
+    link.className = 'view';
+    link.href = p.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'View post';
+
+    card.appendChild(title);
+    card.appendChild(summary);
+    card.appendChild(link);
+    postList.appendChild(card);
+  });
+}
+</script>
+
+</body>
+</html>
