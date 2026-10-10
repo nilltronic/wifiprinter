@@ -645,7 +645,10 @@ const nearestPaletteColor = (r, g, b) => {
       const contextRef = useRef(null);
       const overlayContextRef = useRef(null);
       const pixelDataRef = useRef(null);
-
+      
+      const lastPixelRef = useRef(null);
+      const fileInputRef = useRef(null);
+      
       const frameSize = frameType === 'standard' ? STANDARD_SIZE : WILDFRAME_SIZE;
       const photoPosition = frameType === 'standard' ? { x: 16, y: 16 } : { x: 16, y: 40 };
 
@@ -796,6 +799,26 @@ const nearestPaletteColor = (r, g, b) => {
         }
       };
 
+      const drawLineTo = (x, y) => {
+  const last = lastPixelRef.current;
+  if (!last) {
+    drawPixel(x, y);
+  } else {
+    let x0 = last.x, y0 = last.y;
+    const dx = Math.abs(x - x0), dy = Math.abs(y - y0);
+    const sx = x0 < x ? 1 : -1, sy = y0 < y ? 1 : -1;
+    let err = dx - dy;
+    while (true) {
+      drawPixel(x0, y0);
+      if (x0 === x && y0 === y) break;
+      const e2 = 2 * err;
+      if (e2 > -dy) { err -= dy; x0 += sx; }
+      if (e2 < dx) { err += dx; y0 += sy; }
+    }
+  }
+  lastPixelRef.current = { x, y };
+};
+
       const handleMouseDown = (e) => {
         const { x, y } = getCanvasCoords(e);
         
@@ -827,9 +850,10 @@ const nearestPaletteColor = (r, g, b) => {
         }
 
         setIsDrawing(true);
-        if (tool === 'pencil' || tool === 'eraser') {
-          drawPixel(x, y);
-        }
+if (tool === 'pencil' || tool === 'eraser') {
+  lastPixelRef.current = null;
+  drawLineTo(x, y);
+}
       };
 
       const handleMouseMove = (e) => {
@@ -837,17 +861,18 @@ const nearestPaletteColor = (r, g, b) => {
         setHoverPixel({ x, y });
 
         if (!isDrawing) return;
-        if (tool === 'pencil' || tool === 'eraser') {
-          drawPixel(x, y);
-        }
+if (tool === 'pencil' || tool === 'eraser') {
+  drawLineTo(x, y);
+}
       };
 
       const handleMouseUp = () => {
-        if (isDrawing) {
-          setIsDrawing(false);
-          saveToHistory(pixelDataRef.current);
-        }
-      };
+  lastPixelRef.current = null;
+  if (isDrawing) {
+    setIsDrawing(false);
+    saveToHistory(pixelDataRef.current);
+  }
+};
 
       const handleMouseLeave = () => {
         setHoverPixel(null);
@@ -1127,6 +1152,18 @@ const chooseOriginalFrame = (name) => {
     .catch((err) => alert('Could not load frame: ' + err.message));
 };
 
+      const importFrameFile = (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ''; // lets you re-import the same file later
+  if (!file) return;
+  if (history.length > 1 && !window.confirm('Replace the current frame? Unsaved changes will be lost.')) return;
+  const url = URL.createObjectURL(file);
+  loadFrameImage(url)
+    .then((img) => applyFrameImage(img))
+    .catch(() => alert('That file could not be read as an image.'))
+    .finally(() => URL.revokeObjectURL(url));
+};
+
       const exportPNG = () => {
         const exportCanvas = document.createElement('canvas');
         exportCanvas.width = frameSize.width;
@@ -1240,19 +1277,21 @@ const chooseOriginalFrame = (name) => {
                       }}
                     />
                     <canvas
-                      ref={overlayRef}
-                      className="canvas-layer"
-                      onMouseDown={handleMouseDown}
-                      onMouseMove={handleMouseMove}
-                      onMouseUp={handleMouseUp}
-                      onMouseLeave={handleMouseLeave}
-                      onClick={handleCanvasClick}
-                      style={{
-                        width: frameSize.width * zoom,
-                        height: frameSize.height * zoom,
-                        cursor: tool === 'fill' ? 'crosshair' : tool === 'text' ? 'text' : 'crosshair',
-                      }}
-                    />
+  ref={overlayRef}
+  className="canvas-layer"
+  onPointerDown={handleMouseDown}
+  onPointerMove={handleMouseMove}
+  onPointerUp={handleMouseUp}
+  onPointerLeave={handleMouseLeave}
+  onPointerCancel={handleMouseUp}
+  onClick={handleCanvasClick}
+  style={{
+    width: frameSize.width * zoom,
+    height: frameSize.height * zoom,
+    cursor: tool === 'fill' ? 'crosshair' : tool === 'text' ? 'text' : 'crosshair',
+    touchAction: (tool === 'pencil' || tool === 'eraser') ? 'none' : 'auto',
+  }}
+/>
                     {showGrid && zoom >= 2 && (
                       <div
                         className="pixel-grid-overlay"
@@ -1349,6 +1388,23 @@ const chooseOriginalFrame = (name) => {
                 <div className="panel">
                   <div className="panel-header">⚡ ACTIONS</div>
                   <div className="panel-content">
+
+                    <button
+  onClick={() => fileInputRef.current.click()}
+  className="action-btn btn-primary"
+  style={{marginBottom: '10px'}}
+  title="Import a frame PNG you exported earlier. Text becomes plain pixels."
+>
+  ⇪ IMPORT PNG
+</button>
+<input
+  ref={fileInputRef}
+  type="file"
+  accept="image/png"
+  onChange={importFrameFile}
+  style={{display: 'none'}}
+/>
+                    
                     <button onClick={openFramePicker} className="action-btn btn-primary" style={{marginBottom: '10px'}}>
                     ▦ START FROM ORIGINAL
                     </button>
